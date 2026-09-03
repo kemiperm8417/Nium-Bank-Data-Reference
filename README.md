@@ -16,6 +16,24 @@ Source: `https://refdata.prod.nium.com/ref-data-service` ([OpenAPI](https://refd
 
 ## Run
 
+**Easiest — double-click a launcher.** It creates a private `.venv`, installs the
+requirements on first run, and starts the web app in your browser:
+
+| Platform | Launcher |
+|---|---|
+| macOS | `run.command` (double-click in Finder) or `./run.sh` in Terminal |
+| Windows | `run.bat` (double-click) |
+| Linux | `./run.sh` |
+
+The same launchers export straight to Excel when given arguments — no browser:
+
+```bash
+./run.sh --countries US,GB,IN --out banks.xlsx     # macOS / Linux
+run.bat  --countries US,GB,IN --out banks.xlsx     # Windows
+```
+
+Manual equivalent:
+
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
