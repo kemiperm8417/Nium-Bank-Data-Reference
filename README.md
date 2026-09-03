@@ -17,6 +17,25 @@ streamlit run app.py
 Then pick countries (or hit the **SEPA (36)** / **Common corridors** presets)
 and download the workbook.
 
+### Run on GitHub
+
+**Interactive app — Codespaces.** On the repo page click **Code → Codespaces →
+Create codespace on main**. The dev container installs the requirements and
+starts the app; a browser tab opens at a `https://…app.github.dev` URL. The
+codespace sleeps after 30 idle minutes — just reopen it. By default only you
+can open that URL; to share it, right-click port 8512 in the *Ports* panel and
+set visibility to *Public* (or *Org*).
+
+**Excel export — Actions.** Go to **Actions → Export bank reference data →
+Run workflow**, choose a preset or type country codes, and run it. The
+workbook lands in two places:
+
+- as a downloadable artifact on the run page, and
+- at a stable URL that always points at the most recent export:
+  `https://github.com/kemiperm8417/Nium-Bank-Data-Reference/releases/download/latest/bank_reference_data.xlsx`
+
+The Actions runner has 7 GB of RAM, so India's ~176k rows are fine there.
+
 The same logic is available headless:
 
 ```bash

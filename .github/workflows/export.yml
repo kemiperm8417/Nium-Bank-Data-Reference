@@ -1,0 +1,58 @@
+name: Export bank reference data
+
+# Manual only — nothing hits the Nium API unless someone clicks "Run workflow".
+on:
+  workflow_dispatch:
+    inputs:
+      preset:
+        description: "Preset (overrides countries)"
+        type: choice
+        options: [none, sepa, common]
+        default: none
+      countries:
+        description: "Comma-separated ISO-2 codes, e.g. US,GB,IN,AU"
+        default: "US,GB,AU"
+      publish_release:
+        description: "Also publish to the stable 'latest' release download URL"
+        type: boolean
+        default: true
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # only used by the release step
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+
+      - name: Export workbook
+        env:
+          PRESET: ${{ inputs.preset }}
+          COUNTRIES: ${{ inputs.countries }}
+        run: |
+          case "$PRESET" in
+            sepa)   ARGS="--sepa" ;;
+            common) ARGS="--common" ;;
+            *)      ARGS="--countries $COUNTRIES" ;;
+          esac
+          python refdata.py $ARGS --out bank_reference_data.xlsx
+
+      - name: Upload as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bank-reference-data
+          path: bank_reference_data.xlsx
+
+      - name: Publish to the 'latest' release
+        if: inputs.publish_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view latest >/dev/null 2>&1 || \
+            gh release create latest --title "Latest export" \
+              --notes "Most recent on-demand export. Re-run the workflow to refresh."
+          gh release upload latest bank_reference_data.xlsx --clobber
