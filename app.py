@@ -101,6 +101,18 @@ def main():
         countries = _cached_countries()
     except RefDataError as exc:
         st.error("Could not reach the Reference Data API at %s — %s" % (BASE_URL, exc))
+        if _refdata.IN_BROWSER:
+            st.warning(
+                "This page runs in your browser, so the request went from `%s` "
+                "straight to the API — and the browser blocked it.\n\n"
+                "**Self-check:** open [this API link](%s/entity/Country?limit=1) in a new tab. "
+                "If you see JSON, you are on the VPN and the only problem is **CORS**: "
+                "the Reference Data team must add this page's origin to the API's "
+                "`allowedOrigins`. If the link does not load, connect to the Nium VPN first."
+                % (st.context.url.split("?")[0] if hasattr(st, "context") else "this page",
+                   BASE_URL)
+            )
+            return
         st.warning(
             "This machine cannot reach `refdata.prod.nium.com`. If you are running "
             "on GitHub Codespaces or another cloud host, the API is most likely "

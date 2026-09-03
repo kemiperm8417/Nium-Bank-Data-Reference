@@ -131,6 +131,17 @@ def _get_json(path: str,
             last = exc
             log.warning("%s → %s (attempt %d/%d)", path, exc, attempt, retries)
 
+        except Exception as exc:                    # noqa: BLE001
+            # In the browser (Pyodide) a blocked request surfaces as a
+            # JavaScript exception (pyodide.ffi.JsException: NetworkError…),
+            # not a urllib error. Almost always CORS, or not being on the VPN.
+            if not IN_BROWSER:
+                raise
+            raise RefDataError(
+                "%s blocked by the browser (%s). Either this page's origin is not "
+                "in the API's CORS allow-list, or this machine is not on the Nium "
+                "VPN." % (path, exc.__class__.__name__)) from exc
+
         if attempt < retries and not IN_BROWSER:      # time.sleep is a no-op in Pyodide
             time.sleep(min(30.0, 2.0 ** attempt) + random.uniform(0, 1))
 
