@@ -41,9 +41,12 @@
       {
         requirements: ["openpyxl", "pandas"],
         entrypoint: "app.py",
+        // EVERY .py file app.py imports must be listed here — stlite mounts
+        // only these into the browser's virtual filesystem.
         files: {
-          "app.py":     { url: "./app.py" },
-          "refdata.py": { url: "./refdata.py" },
+          "app.py":        { url: "./app.py" },
+          "refdata.py":    { url: "./refdata.py" },
+          "nium_theme.py": { url: "./nium_theme.py" },
         },
         streamlitConfig: {
           "client.toolbarMode": "viewer",
