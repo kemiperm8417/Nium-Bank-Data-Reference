@@ -30,7 +30,16 @@ from refdata import (                                        # noqa: E402
     suggested_filename,
 )
 
+import refdata as _refdata                                   # noqa: E402
+
 _MIME_XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+# In the browser build (GitHub Pages / stlite) allow `?api=<base url>` so the
+# page can be pointed at a dev CORS proxy for testing. Ignored natively.
+if _refdata.IN_BROWSER:
+    _override = st.query_params.get("api")
+    if _override:
+        _refdata.BASE_URL = _override.rstrip("/")
 
 
 def _init_state():

@@ -42,7 +42,12 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Set, Tuple
 
 log = logging.getLogger(__name__)
 
-BASE_URL = "https://refdata.prod.nium.com/ref-data-service"
+import os
+BASE_URL = os.environ.get("REFDATA_BASE_URL", "https://refdata.prod.nium.com/ref-data-service")
+
+# True when running in the browser under Pyodide (stlite/GitHub Pages): no
+# threads, and the browser owns HTTP (CORS, gzip) instead of urllib sockets.
+IN_BROWSER = sys.platform == "emscripten"
 CLIENT_ID = "nium-refdata-explorer"
 
 # branchCodes silently truncates to 100 rows unless an explicit limit is sent.
@@ -99,16 +104,19 @@ def _get_json(path: str,
 
     for attempt in range(1, retries + 1):
         try:
-            req = urllib.request.Request(url, headers={
-                "X-CLIENT-ID": CLIENT_ID,
-                "Accept": "application/json",
-                "Accept-Encoding": "gzip",
-                "User-Agent": "nium-refdata-explorer/1.0",
-            })
+            headers = {"X-CLIENT-ID": CLIENT_ID, "Accept": "application/json"}
+            if not IN_BROWSER:
+                # Browsers forbid setting these on fetch and handle gzip themselves.
+                headers["Accept-Encoding"] = "gzip"
+                headers["User-Agent"] = "nium-refdata-explorer/1.0"
+            req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=timeout) as resp:
                 raw = resp.read()
                 if (resp.headers.get("Content-Encoding") or "").lower() == "gzip":
-                    raw = gzip.decompress(raw)
+                    try:
+                        raw = gzip.decompress(raw)
+                    except (OSError, EOFError):
+                        pass    # browser fetch already inflated it
             return json.loads(raw)
 
         except urllib.error.HTTPError as exc:
@@ -123,7 +131,7 @@ def _get_json(path: str,
             last = exc
             log.warning("%s → %s (attempt %d/%d)", path, exc, attempt, retries)
 
-        if attempt < retries:
+        if attempt < retries and not IN_BROWSER:      # time.sleep is a no-op in Pyodide
             time.sleep(min(30.0, 2.0 ** attempt) + random.uniform(0, 1))
 
     status = getattr(last, "code", None)
@@ -413,22 +421,32 @@ def _fetch_per_bank(country: str, name: str, extras: Set[str],
     skipped = 0
     total = len(bank_ids)
 
-    with ThreadPoolExecutor(max_workers=CHUNK_WORKERS) as pool:
-        futures = {
-            pool.submit(_get_json, "/%s/%s/branchCodes" % (country, bid),
-                        {"limit": BIG_LIMIT}): bid
-            for bid in bank_ids
-        }
-        for i, fut in enumerate(as_completed(futures), start=1):
-            bid = futures[fut]
-            try:
-                rows.extend(_flatten_pairs(country, name, fut.result(),
-                                           "branchCodes:per-bank", extras))
-            except (RefDataError, Exception) as exc:  # noqa: B014 - skip, never abort
-                skipped += 1
-                log.warning("%s/%s branches failed: %s", country, bid, exc)
-            if progress_cb:
-                progress_cb("%s — bank %d/%d (%s)" % (country, i, total, bid), i / total)
+    def _one(bid: str) -> Any:
+        # bankIds can contain spaces (VN: "STANDARD CHARTERED") — encode the segment.
+        return _get_json("/%s/%s/branchCodes" % (country, urllib.parse.quote(bid, safe="")),
+                         {"limit": BIG_LIMIT})
+
+    if IN_BROWSER:
+        # Pyodide has no threads — fetch banks one after another.
+        pending = ((bid, None) for bid in bank_ids)
+    else:
+        pool = ThreadPoolExecutor(max_workers=CHUNK_WORKERS)
+        futures = {pool.submit(_one, bid): bid for bid in bank_ids}
+        pending = ((futures[f], f) for f in as_completed(futures))
+
+    for i, (bid, fut) in enumerate(pending, start=1):
+        try:
+            payload = fut.result() if fut is not None else _one(bid)
+            rows.extend(_flatten_pairs(country, name, payload,
+                                       "branchCodes:per-bank", extras))
+        except Exception as exc:                    # noqa: BLE001 - skip, never abort
+            skipped += 1
+            log.warning("%s/%s branches failed: %s", country, bid, exc)
+        if progress_cb:
+            progress_cb("%s — bank %d/%d (%s)" % (country, i, total, bid), i / total)
+
+    if not IN_BROWSER:
+        pool.shutdown(wait=True)
 
     note = "chunked over %d banks" % total
     if skipped:

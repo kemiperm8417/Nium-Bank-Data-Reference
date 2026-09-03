@@ -24,7 +24,37 @@ streamlit run app.py
 Then pick countries (or hit the **SEPA (36)** / **Common corridors** presets)
 and download the workbook.
 
-### Run on GitHub — only with Nium network access
+### GitHub Pages URL — runs in *your* browser
+
+**https://kemiperm8417.github.io/Nium-Bank-Data-Reference/**
+
+`index.html` runs the same `app.py` / `refdata.py` entirely inside the
+visitor's browser via [stlite](https://github.com/whitphx/stlite) (Streamlit on
+WebAssembly). Nothing executes on GitHub's servers, so the VPN restriction is
+not a problem: the Python runs on your laptop, which *is* on the VPN.
+
+It needs two things:
+
+1. **Pages enabled once** — repo *Settings → Pages → Source: GitHub Actions*.
+   After that, every push to `main` redeploys via `.github/workflows/pages.yml`.
+2. **CORS allowed by the refdata team** — the API currently sends no
+   `Access-Control-Allow-Origin` header and its preflight returns 403 (a Spring
+   CORS allow-list). Ask them to add `https://kemiperm8417.github.io` to
+   `allowedOrigins`. Until then the page loads but every fetch fails with a
+   CORS error in the browser console.
+
+Notes: first load downloads ~30 MB (cached afterwards); India runs sequentially
+(no threads in the browser) so expect several minutes; `?api=<base-url>` on the
+URL points the page at a different API base — `dev/cors_proxy.py` uses this to
+test locally before CORS is enabled:
+
+```bash
+python3 dev/cors_proxy.py 8787 &
+python3 -m http.server 8788
+# then open http://127.0.0.1:8788/?api=http://127.0.0.1:8787
+```
+
+### Codespaces / Actions — only with Nium network access
 
 The two GitHub paths below are wired up but **will not work as-is**, because
 GitHub's cloud machines cannot reach the API (see the network note above).

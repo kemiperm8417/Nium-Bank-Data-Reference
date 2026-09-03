@@ -1,0 +1,34 @@
+name: Deploy to GitHub Pages
+
+# Publishes the repo root as a static site; index.html runs app.py in the
+# browser via stlite. Requires Pages to be enabled once in
+# Settings → Pages → Source: "GitHub Actions" (that step needs a PAT to
+# automate, so it is done by hand).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+      - id: deployment
+        uses: actions/deploy-pages@v5

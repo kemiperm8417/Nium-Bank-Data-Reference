@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bank Reference Data</title>
+  <!--
+    GitHub Pages build: runs the same Streamlit app entirely in the browser via
+    stlite (Streamlit on WebAssembly). Nothing runs on GitHub's servers — the
+    Python executes on the visitor's machine, which is why it can reach the
+    VPN-only Nium API. First load downloads ~30 MB and takes ~30-60 s.
+  -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/browser@0.85.1/build/stlite.css" />
+  <style>
+    #boot { font: 15px/1.5 -apple-system, system-ui, sans-serif; color: #444; padding: 2rem; }
+    #boot code { background: #f2f2f2; padding: 0 .3em; }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div id="boot">
+      <strong>Loading Bank Reference Data…</strong><br />
+      Downloading the Python runtime into your browser (about 30 MB, once). This page must be
+      opened from a machine on the Nium network/VPN — the API is not reachable elsewhere.
+    </div>
+  </div>
+  <script type="module">
+    import { mount } from "https://cdn.jsdelivr.net/npm/@stlite/browser@0.85.1/build/stlite.js";
+    mount(
+      {
+        requirements: ["openpyxl", "pandas"],
+        entrypoint: "app.py",
+        files: {
+          "app.py":     { url: "./app.py" },
+          "refdata.py": { url: "./refdata.py" },
+        },
+        streamlitConfig: { "client.toolbarMode": "viewer" },
+      },
+      document.getElementById("root"),
+    );
+  </script>
+</body>
+</html>
