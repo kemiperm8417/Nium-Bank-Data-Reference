@@ -91,8 +91,14 @@ def main():
     try:
         countries = _cached_countries()
     except RefDataError as exc:
-        st.error("Could not load the country list from %s — %s" % (BASE_URL, exc))
-        st.caption("Falling back to the built-in country codes.")
+        st.error("Could not reach the Reference Data API at %s — %s" % (BASE_URL, exc))
+        st.warning(
+            "This machine cannot reach `refdata.prod.nium.com`. If you are running "
+            "on GitHub Codespaces or another cloud host, the API is most likely "
+            "restricted to Nium's network — run the app from a machine on the Nium "
+            "network/VPN instead. Falling back to built-in country codes so you can "
+            "still see the UI, but fetches will fail until the API is reachable."
+        )
         countries = [{"code": c, "name": c, "banned": False}
                      for c in sorted(set(SEPA_COUNTRIES) | set(COMMON_CORRIDORS))]
 

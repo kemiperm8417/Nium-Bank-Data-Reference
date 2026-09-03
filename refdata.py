@@ -344,7 +344,10 @@ def list_countries() -> List[Dict[str, Any]]:
     Sourced from ``GET /entity/Country``. Banned countries are kept but flagged
     so a picker can grey them out rather than hide them.
     """
-    payload = _get_json("/entity/Country", {"limit": 1000}, timeout=60)
+    # Fail fast: this is the first call the UI makes, and a hung connection
+    # (e.g. from a host that cannot reach Nium's network) must surface as an
+    # error in seconds, not after minutes of retries.
+    payload = _get_json("/entity/Country", {"limit": 1000}, timeout=15, retries=1)
     out: List[Dict[str, Any]] = []
     for c in payload or []:
         code = _first(c.get("code_2"), c.get("id"))
