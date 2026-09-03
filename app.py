@@ -18,6 +18,9 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+import nium_theme                                            # noqa: E402
+nium_theme.apply()
+
 from refdata import (                                        # noqa: E402
     BASE_URL,
     COMMON_CORRIDORS,
@@ -89,12 +92,13 @@ def _estimate(codes):
 
 
 def main():
-    st.title("🏦  Bank Reference Data")
-    st.caption(
-        "Bank and branch reference data straight from Nium's public Reference Data "
-        "API — ACH/ABA for the US, IFSC for India, Sort Code for the UK, BSB for "
-        "Australia, bank + branch codes for Japan and Canada, and BIC/SWIFT across "
-        "SEPA. Exports one Excel sheet per country. No credentials required."
+    st.title("Bank Reference Data")
+    st.markdown(
+        '<p class="lede">Bank and branch reference data from Nium\'s Reference Data '
+        'API — ACH/ABA for the US, IFSC for India, Sort Code for the UK, BSB for '
+        'Australia, bank + branch codes for Japan and Canada, BIC/SWIFT across SEPA. '
+        'One Excel sheet per country.</p>',
+        unsafe_allow_html=True,
     )
 
     try:
@@ -128,13 +132,13 @@ def main():
 
     # ── presets ──────────────────────────────────────────────────────────────
     c1, c2, c3 = st.columns([1, 1, 1])
-    if c1.button("🇪🇺  SEPA (36)", use_container_width=True):
+    if c1.button("SEPA (36)", use_container_width=True):
         st.session_state["refdata_selection"] = [c for c in SEPA_COUNTRIES if c in options]
         st.rerun()
-    if c2.button("🌍  Common corridors", use_container_width=True):
+    if c2.button("Common corridors", use_container_width=True):
         st.session_state["refdata_selection"] = [c for c in COMMON_CORRIDORS if c in options]
         st.rerun()
-    if c3.button("✖  Clear", use_container_width=True):
+    if c3.button("Clear", use_container_width=True):
         st.session_state["refdata_selection"] = []
         st.rerun()
 
@@ -157,7 +161,7 @@ def main():
     force = st.checkbox("Force refresh (bypass the 6-hour cache)", value=False)
 
     # ── fetch ────────────────────────────────────────────────────────────────
-    if st.button("⬇️  Fetch reference data", type="primary", disabled=not selected):
+    if st.button("Fetch reference data", type="primary", disabled=not selected):
         if force:
             _cached_fetch.clear()
 
@@ -169,11 +173,16 @@ def main():
                 res = _cached_fetch(code)
                 results.append(res)
                 if res.error:
-                    st.write("❌  %s — %s" % (code, res.error))
+                    st.markdown('<span class="pill negative">Failed</span>&nbsp; %s — %s'
+                                % (code, res.error), unsafe_allow_html=True)
                 else:
-                    st.write("✅  %s — %s rows via %s in %.1fs%s" % (
-                        code, format(len(res.rows), ","), res.mode, res.seconds,
-                        " (%s)" % res.notes if res.notes else ""))
+                    st.markdown(
+                        '<span class="pill positive">OK</span>&nbsp; %s — '
+                        '<span class="num">%s</span> rows via %s in '
+                        '<span class="num">%.1fs</span>%s'
+                        % (code, format(len(res.rows), ","), res.mode, res.seconds,
+                           " (%s)" % res.notes if res.notes else ""),
+                        unsafe_allow_html=True)
             bar.progress(1.0, text="Building workbook…")
             status.update(label="Building workbook…")
 
@@ -243,16 +252,14 @@ def main():
             b64 = base64.b64encode(st.session_state["refdata_xlsx"]).decode("ascii")
             size_mb = len(st.session_state["refdata_xlsx"]) / 1e6
             st.markdown(
-                '<a download="%s" href="data:%s;base64,%s" '
-                'style="display:inline-block;padding:.5rem 1rem;border-radius:.5rem;'
-                'background:#ff4b4b;color:#fff;font-weight:600;text-decoration:none">'
-                '⬇️&nbsp; Download Excel workbook (%.1f MB)</a>'
+                '<a class="nium-btn" download="%s" href="data:%s;base64,%s">'
+                'Download Excel workbook <span class="num">(%.1f MB)</span></a>'
                 % (st.session_state["refdata_filename"], _MIME_XLSX, b64, size_mb),
                 unsafe_allow_html=True,
             )
         else:
             st.download_button(
-                "⬇️  Download Excel workbook",
+                "Download Excel workbook",
                 data=st.session_state["refdata_xlsx"],
                 file_name=st.session_state["refdata_filename"],
                 mime=_MIME_XLSX,

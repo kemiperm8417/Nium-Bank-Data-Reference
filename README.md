@@ -170,10 +170,23 @@ shaped the way it is:
 - Excel sheet names are capped at 31 characters and cannot contain `[ ] : * ? / \`;
   names are prefixed with the ISO code so truncation stays unambiguous.
 
+## Styling
+
+The UI follows the **Nium design system** (`~/Documents/vscode/nium-design-system` —
+`tokens.css` + `DESIGN.md`). `.streamlit/config.toml` carries what Streamlit's
+theme engine can express (system font stack, `#f5f5f7` page, `#7461D4` accent,
+12px radius, borders); `nium_theme.py` injects the token variables and the rest
+(type scale, pill chips, card panels, `.btn` anatomy). `index.html` mirrors the
+same theme keys for the Pages build. Light presentation only — Streamlit applies
+a custom theme regardless of OS setting, so a partial dark mode would mismatch.
+Change colors in the design system's tokens and mirror them here; don't invent
+new ones.
+
 ## Files
 
 | File | Purpose |
 |---|---|
 | `refdata.py` | API client, per-country strategy, normalisation, Excel writer, CLI |
 | `app.py` | Streamlit UI |
+| `nium_theme.py`, `.streamlit/config.toml` | Nium design-system theme |
 | `.claude/launch.json` | Dev-server config (port 8512) |
