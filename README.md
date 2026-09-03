@@ -5,7 +5,14 @@ and exports it as an Excel workbook with **one sheet per country**, normalised
 around each country's **domestic routing code**.
 
 Source: `https://refdata.prod.nium.com/ref-data-service` ([OpenAPI](https://refdata.prod.nium.com/ref-data-service/v3/api-docs))
-— read-only GETs, **no credentials required**.
+— read-only GETs, no credentials required.
+
+> **Network requirement.** The API host resolves to a private address
+> (`100.64.x.x`) and is reachable **only from Nium's network / VPN**. Run this
+> tool on a machine connected to the Nium VPN or on a Nium-internal host.
+> Cloud hosts — GitHub Codespaces, GitHub Actions' hosted runners, Streamlit
+> Cloud, etc. — cannot reach it and will show *"Could not reach the Reference
+> Data API"*.
 
 ## Run
 
@@ -17,7 +24,15 @@ streamlit run app.py
 Then pick countries (or hit the **SEPA (36)** / **Common corridors** presets)
 and download the workbook.
 
-### Run on GitHub
+### Run on GitHub — only with Nium network access
+
+The two GitHub paths below are wired up but **will not work as-is**, because
+GitHub's cloud machines cannot reach the API (see the network note above).
+They become usable only if (a) Nium exposes the API publicly, or (b) the
+Actions workflow is pointed at a **self-hosted runner** inside the Nium
+network (`runs-on: self-hosted` in `.github/workflows/export.yml`). Until then,
+run the app locally on the VPN, or on an internal server and share its URL.
+
 
 **Interactive app — Codespaces.** On the repo page click **Code → Codespaces →
 Create codespace on main**. The dev container installs the requirements and
