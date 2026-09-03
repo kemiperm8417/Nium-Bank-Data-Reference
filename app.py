@@ -224,13 +224,28 @@ def main():
         st.dataframe(pd.DataFrame(rows[:200]), use_container_width=True, hide_index=True)
 
     if st.session_state["refdata_xlsx"]:
-        st.download_button(
-            "⬇️  Download Excel workbook",
-            data=st.session_state["refdata_xlsx"],
-            file_name=st.session_state["refdata_filename"],
-            mime=_MIME_XLSX,
-            type="primary",
-        )
+        if _refdata.IN_BROWSER:
+            # stlite (GitHub Pages) has no media server for st.download_button,
+            # so hand the bytes to the browser directly as a data: URL.
+            import base64
+            b64 = base64.b64encode(st.session_state["refdata_xlsx"]).decode("ascii")
+            size_mb = len(st.session_state["refdata_xlsx"]) / 1e6
+            st.markdown(
+                '<a download="%s" href="data:%s;base64,%s" '
+                'style="display:inline-block;padding:.5rem 1rem;border-radius:.5rem;'
+                'background:#ff4b4b;color:#fff;font-weight:600;text-decoration:none">'
+                '⬇️&nbsp; Download Excel workbook (%.1f MB)</a>'
+                % (st.session_state["refdata_filename"], _MIME_XLSX, b64, size_mb),
+                unsafe_allow_html=True,
+            )
+        else:
+            st.download_button(
+                "⬇️  Download Excel workbook",
+                data=st.session_state["refdata_xlsx"],
+                file_name=st.session_state["refdata_filename"],
+                mime=_MIME_XLSX,
+                type="primary",
+            )
         st.caption(
             "The workbook is held in this session, so downloading does not re-fetch. "
             "Refreshing the page during a fetch loses the run."
